@@ -1,5 +1,6 @@
 import numpy as np
 from termcolor import colored
+from time import sleep
 
 def Number(number):
     if number == 1:
@@ -44,35 +45,50 @@ def Sequence2Deck(array):
     deck = []
     for ii in range(len(array)):
         if 1 <= array[ii] <= 10:
-            this_value = 'C' + str(array[ii])
+            if array[ii] == 10:
+                this_value = 'CK'
+            else:
+                this_value = 'C' + str(array[ii])
         elif 11 <= array[ii] <= 20:
-            this_value = 'Q' + str(array[ii] - 10)
+            if array[ii] == 20:
+                this_value = 'QK'
+            else:
+                this_value = 'Q' + str(array[ii] - 10)
         elif 21 <= array[ii] <= 30:
-            this_value = 'P' + str(array[ii] - 20)
+            if array[ii] == 30:
+                this_value = 'PK'
+            else:
+                this_value = 'P' + str(array[ii] - 20)
         elif 31 <= array[ii] <= 40:
-            this_value = 'F' + str(array[ii] - 30)
+            if array[ii] == 40:
+                this_value = 'FK'
+            else:
+                this_value = 'F' + str(array[ii] - 30)
 
         deck.append(this_value)
     return np.array(deck)
 
-def PrintTable(table, actions, current_hand):
-    print('-------------------   ' + str(actions))
+def PrintTable(table, actions, current_hand, current_card, row, column):
+    print('--------- Substitution number: ' + str(actions))
     for i in range(4):
         table_row = table[i, :]
         for dummy_table in table_row:
-            print(colored(dummy_table, 'blue'), end = '  ')
+            if dummy_table == table[row, column]:
+                print(colored(dummy_table, 'yellow'), end = '  ')
+            else:
+                print(colored(dummy_table, 'blue'), end = '  ')
         print()
-    print('---------------- ' + colored('Hand:', 'red'), end = ' ')
+    print('--------- Hand:' , end = ' ')
     if len(current_hand) > 0:
         for dummy_hand in current_hand:
             if len(current_hand) > 0:
                 print(colored(dummy_hand, 'red'), end = ' ')
-        print('\n')
+        print(' || ' + colored(current_card, 'green'), end = '\n')
     else:
         print(colored('empty!', 'red'))   
     print('--------------------------------------------------')
     
-def Solitaire(display = True):
+def Solitaire(display = True, slow_down = None):
 
     # build the deck, define seed and numbers and shuffle the deck!
     sequence = np.arange(1, 41, 1)
@@ -84,13 +100,14 @@ def Solitaire(display = True):
     hand = deck[0:4]
 
     # define king cards
-    kings = ['C10', 'Q10', 'P10', 'F10']
+    kings = ['CK', 'QK', 'PK', 'FK']
 
     # let's count the number of necessary actions and the number of cards drawn from the hand
     card_counter = 0
     actions = 0
     current_hand = hand
-
+    go_on = True
+    
     for card in hand:
         card_counter += 1
         this_card = card      
@@ -98,29 +115,42 @@ def Solitaire(display = True):
         # eventually print the hand status when a new card is drawn
         if display == True:
             print('--------------------------------------------------')
-            print('Card: ' + colored(this_card, 'red') + ', ' + Number(card_counter) + ' card drawn.')
+            print('--------- Card: ' + colored(this_card, 'red') + ', ' + Number(card_counter) + ' card drawn.')
             card_index = np.where(current_hand == this_card)
             current_hand = np.delete(current_hand, card_index)
 
         while this_card not in kings:
+            
+            if go_on == True:
 
-            # eventually print the table status at the beginning of each loop
-            if display == True:
-                PrintTable(table, actions, current_hand)
+                # read card future position
+                row, column = Card2Position(this_card)
 
-            # read card future position
-            row, column = Card2Position(this_card)
+                # eventually print the table status at the beginning of each loop
+                if display == True:
+                    PrintTable(table, actions, current_hand, this_card, row, column)
 
-            # memorize current card in that position
-            temp_card = table[row, column]
+                # memorize current card in that position
+                temp_card = table[row, column]
 
-            # substitute the card in that position
-            table[row, column] = this_card
+                # substitute the card in that position
+                table[row, column] = this_card
 
-            # the new card must be put in the right position!
-            this_card = temp_card
+                # the new card must be put in the right position!
+                this_card = temp_card
 
-            # let's count the action!
-            actions += 1
-    
+                # let's count the action!
+                actions += 1
+
+                # if we want to follow the process we can simply slow things down!
+                if slow_down:
+                    sleep(slow_down)
+            
     return CheckSuccess(table), actions
+
+
+def main():
+    Solitaire(slow_down = 8)
+
+if __name__ == "__main__":
+    main()
