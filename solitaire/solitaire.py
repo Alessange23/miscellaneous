@@ -1,6 +1,7 @@
 import numpy as np
 from termcolor import colored
 from time import sleep
+import sys
 
 def Number(number):
     if number == 1:
@@ -68,16 +69,23 @@ def Sequence2Deck(array):
         deck.append(this_value)
     return np.array(deck)
 
-def PrintTable(table, actions, current_hand, current_card, row, column):
-    print('--------- Substitution number: ' + str(actions))
+def PrintTable(table, row = None, column = None, color = None):
     for i in range(4):
         table_row = table[i, :]
         for dummy_table in table_row:
-            if dummy_table == table[row, column]:
-                print(colored(dummy_table, 'yellow'), end = '  ')
+            if row and column:
+                if dummy_table == table[row, column]:
+                    print(colored(dummy_table, 'yellow'), end = '  ')
+                else:
+                    print(colored(dummy_table, 'blue'), end = '  ')
             else:
-                print(colored(dummy_table, 'blue'), end = '  ')
+                if color:
+                    print(colored(dummy_table, color), end = '  ')
         print()
+
+def PrintStep(table, actions, current_hand, current_card, row, column):
+    print('--------- Substitution number: ' + str(actions))
+    PrintTable(table, row, column)
     print('--------- Hand:' , end = ' ')
     if len(current_hand) > 0:
         for dummy_hand in current_hand:
@@ -85,7 +93,7 @@ def PrintTable(table, actions, current_hand, current_card, row, column):
                 print(colored(dummy_hand, 'red'), end = ' ')
         print(' || ' + colored(current_card, 'green'), end = '\n')
     else:
-        print(colored('empty!', 'red'))   
+        print(colored('empty!', 'red') + ' || ' + colored(current_card, 'green'), end = '\n')   
     print('--------------------------------------------------')
     
 def Solitaire(display = True, slow_down = None):
@@ -125,7 +133,7 @@ def Solitaire(display = True, slow_down = None):
 
             # eventually print the table status at the beginning of each loop
             if display == True:
-                PrintTable(table, actions, current_hand, this_card, row, column)
+                PrintStep(table, actions, current_hand, this_card, row, column)
 
             # memorize current card in that position
             temp_card = table[row, column]
@@ -142,12 +150,24 @@ def Solitaire(display = True, slow_down = None):
             # if we want to follow the process we can simply slow things down!
             if slow_down:
                 sleep(slow_down)
+        # eventually display the final disposition
+        if display == True:
+            success = CheckSuccess(table)[0]
+            if success == 1:
+                color = 'green'
+            else: 
+                color = 'red'
+            PrintTable(table, color)
+
             
     return CheckSuccess(table), actions
 
 
 def main():
-    Solitaire(slow_down = 8)
+    slowing_time = None
+    if len(sys.argv) > 1:
+        slowing_time = float(sys.argv[1])
+    Solitaire(slow_down = slowing_time)
 
 if __name__ == "__main__":
     main()
