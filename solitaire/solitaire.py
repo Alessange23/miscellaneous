@@ -106,8 +106,7 @@ def Solitaire(display = True, slow_down = None):
     card_counter = 0
     actions = 0
     current_hand = hand
-    go_on = True
-    
+
     for card in hand:
         card_counter += 1
         this_card = card      
@@ -120,31 +119,29 @@ def Solitaire(display = True, slow_down = None):
             current_hand = np.delete(current_hand, card_index)
 
         while this_card not in kings:
-            
-            if go_on == True:
+                
+            # read card future position
+            row, column = Card2Position(this_card)
 
-                # read card future position
-                row, column = Card2Position(this_card)
+            # eventually print the table status at the beginning of each loop
+            if display == True:
+                PrintTable(table, actions, current_hand, this_card, row, column)
 
-                # eventually print the table status at the beginning of each loop
-                if display == True:
-                    PrintTable(table, actions, current_hand, this_card, row, column)
+            # memorize current card in that position
+            temp_card = table[row, column]
 
-                # memorize current card in that position
-                temp_card = table[row, column]
+            # substitute the card in that position
+            table[row, column] = this_card
 
-                # substitute the card in that position
-                table[row, column] = this_card
+            # the new card must be put in the right position!
+            this_card = temp_card
 
-                # the new card must be put in the right position!
-                this_card = temp_card
+            # let's count the action!
+            actions += 1
 
-                # let's count the action!
-                actions += 1
-
-                # if we want to follow the process we can simply slow things down!
-                if slow_down:
-                    sleep(slow_down)
+            # if we want to follow the process we can simply slow things down!
+            if slow_down:
+                sleep(slow_down)
             
     return CheckSuccess(table), actions
 
