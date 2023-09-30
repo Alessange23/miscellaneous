@@ -45,18 +45,33 @@ def Sequence2Deck(array):
     for ii in range(len(array)):
         if 1 <= array[ii] <= 10:
             this_value = 'C' + str(array[ii])
-        if 11 <= array[ii] <= 20:
+        elif 11 <= array[ii] <= 20:
             this_value = 'Q' + str(array[ii] - 10)
-        if 21 <= array[ii] <= 30:
+        elif 21 <= array[ii] <= 30:
             this_value = 'P' + str(array[ii] - 20)
-        if 31 <= array[ii] <= 40:
+        elif 31 <= array[ii] <= 40:
             this_value = 'F' + str(array[ii] - 30)
 
         deck.append(this_value)
-
     return np.array(deck)
 
-
+def PrintTable(table, actions, current_hand):
+    print('-------------------   ' + str(actions))
+    for i in range(4):
+        table_row = table[i, :]
+        for dummy_table in table_row:
+            print(colored(dummy_table, 'blue'), end = '  ')
+        print()
+    print('---------------- ' + colored('Hand:', 'red'), end = ' ')
+    if len(current_hand) > 0:
+        for dummy_hand in current_hand:
+            if len(current_hand) > 0:
+                print(colored(dummy_hand, 'red'), end = ' ')
+        print('\n')
+    else:
+        print(colored('empty!', 'red'))   
+    print('--------------------------------------------------')
+    
 def Solitaire(display = True):
 
     # build the deck, define seed and numbers and shuffle the deck!
@@ -91,22 +106,8 @@ def Solitaire(display = True):
 
             # eventually print the table status at the beginning of each loop
             if display == True:
-                print('-------------------   ' + str(actions))
-                for i in range(4):
-                    table_row = table[i, :]
-                    for dummy_table in table_row:
-                        print(colored(dummy_table, 'blue'), end = '  ')
-                    print()
-                print('---------------- ' + colored('Hand:', 'red'), end = ' ')
-                if len(current_hand) > 0:
-                    for dummy_hand in current_hand:
-                        if len(current_hand) > 0:
-                            print(colored(dummy_hand, 'red'), end = ' ')
-                    print('\n')
-                else:
-                    print(colored('empty!', 'red'))   
-                print('--------------------------------------------------')
-            
+                PrintTable(table, actions, current_hand)
+
             # read card future position
             row, column = Card2Position(this_card)
 
