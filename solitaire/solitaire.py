@@ -7,7 +7,7 @@ import sys
 class Card:
     seed = ''
     value = 0
-    status = ''
+    status = 'neutral'
 
     def __init__(self, s, n):
         self.seed = s
@@ -29,7 +29,12 @@ class Card:
         column = self.GetColumn()
         return row, column
     
-    def SetStatus(self, string):
+    def Check(self, table):
+        row, column = self.GetPosition()
+        if table[row, column] == self:
+            return True
+
+    def Update(self, string):
         self.status = string
 
     def PrintCard(self, color = None):
@@ -37,14 +42,34 @@ class Card:
         val = self.value
         if val == 10:
             val = 'K'
-        if stat == 'correct':
-            print(colored(self.seed + str(val), 'blue'), end = ' ')
+        if not color:
+            if stat == 'correct':
+                print(colored(self.seed + str(val), 'blue'), end = ' ')
+            elif stat == 'incorrect':
+                print(colored(self.seed + str(val), 'red'), end = ' ')
+            elif stat == 'to_be_substituted':
+                print(colored(self.seed + str(val), 'yellow'), end = ' ')
+            elif stat == 'neutral':
+                print(colored(self.seed + str(val), 'white'), end = ' ')
         elif color:
             print(colored(self.seed + str(val), color), end = ' ')
         else:
             print(self.seed + str(val), end = ' ')
 
-    
+
+def CheckTableState(table, true_indexes, kings):
+    success = True
+    for ii in range(table.shape[0]):
+        for jj in range(table.shape[1]):
+            if [ii, jj] not in true_indexes:
+                if table[ii, jj] not in kings:
+                    if table[ii, jj].Check(table) == True:
+                        true_indexes.append([ii, jj])
+                        table[ii, jj].Update('correct')
+                    else:
+                        table[ii, jj].Update('incorrect')
+                        success = False
+    return [true_indexes, success]   
 
 
 def Sequence2Deck(array):
@@ -62,21 +87,19 @@ def Sequence2Deck(array):
         deck.append(card)   
     return np.array(deck)
 
-def PrintStatus(table_matrix, card_number, next_card, hand, moves):
+def PrintStatus(table, card_number, next_card, hand, moves):
     print('\n------ Card: ' + str(card_number) + ' || Move: ' + str(moves))
-    for ii in range(table_matrix.shape[0]):
-        table_row = table_matrix[ii, :]
-        for jj in range(len(table_row)):
+    for ii in range(table.shape[0]):
+        for jj in range(table.shape[1]):
             next_row, next_column = next_card.GetPosition()
             if next_row == ii and next_column == jj:
-                color = 'yellow'
-            else:
-                color = 'white'
-            table_row[jj].PrintCard(color)
+                state = 'to_be_substituted'
+                table[ii, jj].Update(state)
+            table[ii, jj].PrintCard()
         print()
     print('------ Hand:', end = ' ')
     for hand_card in hand:        
-        hand_card.PrintCard(color = 'red')
+        hand_card.PrintCard(color = 'grey')
     print('||', end = ' ')
     next_card.PrintCard(color = 'green')
     print()
@@ -91,7 +114,7 @@ def Solitaire(display = True, slow_down = None):
     # define player's hand and table
     hand = deck[0:4]
     deck = deck[4:]
-    table = deck.reshape(4, 9)
+    table = np.array(deck.reshape(4, 9), dtype = Card)
 
     # define king cards
     ck = Card('C', 10)
@@ -103,47 +126,63 @@ def Solitaire(display = True, slow_down = None):
     # let's count the number of necessary actions and the number of cards drawn from the hand
     card_counter = 0
     actions = 0
-
+    true_positions = []
+    success = False
+    
     for card in hand:
         card_counter += 1
         this_card = card
         card_index = np.where(hand == this_card)
         hand = np.delete(hand, card_index)
 
+        # eventually print the configuration at the very beginning of the game
+        if display == True and actions == 0:
+            true_positions, success = CheckTableState(table, true_positions, kings)
+            PrintStatus(table, card_counter, this_card, hand, actions)
+
         while this_card not in kings:
-            
+                        
             # read future position for the card
             row, column = this_card.GetPosition()
 
-            # eventually print the table status at the beginning of each loop
-            if display == True:
-                PrintStatus(table, card_counter, this_card, hand, actions)
-
-            # memorize current card in that position
+            # memorize current table card located in that position
             temp_card = table[row, column]
 
             # substitute the card in that position
             table[row, column] = this_card
-            this_card.SetStatus('correct')
 
             # the new card must be put in the right position!
             this_card = temp_card
 
-            # let's count the action!
+            # keep track of the number of moves
             actions += 1
+
+            # check table state during each loop
+            true_positions, success = CheckTableState(table, true_positions, kings)
+            
+            # eventually print the table status at the beginning of each loop
+            if display == True:
+                PrintStatus(table, card_counter, this_card, hand, actions)
 
             # if we want to follow the process we can simply slow things down!
             if slow_down:
                 sleep(slow_down)
 
-        if display == True:
-            PrintStatus(table, card_counter, this_card, hand, actions)
-
+    return success 
+ 
 def main():
     slowing_time = None
+    success = []
+    number_of_games = int(1e5)
     if len(sys.argv) > 1:
         slowing_time = float(sys.argv[1])
-    Solitaire(slow_down = slowing_time)
+    for ii in range(number_of_games):
+        if Solitaire(display = False, slow_down = slowing_time) == True:
+            success.append(1)
+        else:
+            success.append(0)
+    good = np.sum(success)
+    print('\nSuccess proboability is: ' + str((good/len(success))*100) + '%')
 
 if __name__ == "__main__":
     main()
