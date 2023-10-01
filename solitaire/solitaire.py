@@ -87,6 +87,7 @@ def Sequence2Deck(array):
         deck.append(card)   
     return np.array(deck)
 
+
 def PrintState(table, card_number, next_card, hand, moves):
     print('\n------ Card: ' + str(card_number) + ' || Move: ' + str(moves))
     for ii in range(table.shape[0]):
@@ -103,6 +104,7 @@ def PrintState(table, card_number, next_card, hand, moves):
     print('||', end = ' ')
     next_card.PrintCard(color = 'green')
     print()
+
 
 def Solitaire(display = True, slow_down = None):
 
@@ -172,10 +174,21 @@ def Solitaire(display = True, slow_down = None):
  
 def main():
     slowing_time = None
+    disp = False
     success = []
     number_of_games = int(1e5)
     if len(sys.argv) > 1:
-        slowing_time = float(sys.argv[1])
+        disp = sys.argv[1]
+        if disp == 'False':
+            disp = False
+        elif disp == 'True':
+            disp = True
+        slowing_time = float(sys.argv[2])
+    
+    success = Solitaire(display = disp, slow_down = slowing_time)
+    print('\nSuccess: ' + str(success) +'\n')
+    
+    '''
     for ii in range(number_of_games):
         if Solitaire(display = False, slow_down = slowing_time) == True:
             success.append(1)
@@ -183,6 +196,7 @@ def main():
             success.append(0)
     good = np.sum(success)
     print('\nSuccess proboability is: ' + str((good/len(success))*100) + '%')
+    '''    
 
 if __name__ == "__main__":
     main()
