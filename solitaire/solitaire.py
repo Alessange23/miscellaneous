@@ -57,7 +57,7 @@ class Card:
             print(self.seed + str(val), end = ' ')
 
 
-def CheckTableState(table, true_indexes, kings):
+def TableState(table, true_indexes, kings):
     success = True
     for ii in range(table.shape[0]):
         for jj in range(table.shape[1]):
@@ -87,7 +87,7 @@ def Sequence2Deck(array):
         deck.append(card)   
     return np.array(deck)
 
-def PrintStatus(table, card_number, next_card, hand, moves):
+def PrintState(table, card_number, next_card, hand, moves):
     print('\n------ Card: ' + str(card_number) + ' || Move: ' + str(moves))
     for ii in range(table.shape[0]):
         for jj in range(table.shape[1]):
@@ -137,8 +137,8 @@ def Solitaire(display = True, slow_down = None):
 
         # eventually print the configuration at the very beginning of the game
         if display == True and actions == 0:
-            true_positions, success = CheckTableState(table, true_positions, kings)
-            PrintStatus(table, card_counter, this_card, hand, actions)
+            true_positions, success = TableState(table, true_positions, kings)
+            PrintState(table, card_counter, this_card, hand, actions)
 
         while this_card not in kings:
                         
@@ -158,11 +158,11 @@ def Solitaire(display = True, slow_down = None):
             actions += 1
 
             # check table state during each loop
-            true_positions, success = CheckTableState(table, true_positions, kings)
+            true_positions, success = TableState(table, true_positions, kings)
             
             # eventually print the table status at the beginning of each loop
             if display == True:
-                PrintStatus(table, card_counter, this_card, hand, actions)
+                PrintState(table, card_counter, this_card, hand, actions)
 
             # if we want to follow the process we can simply slow things down!
             if slow_down:
