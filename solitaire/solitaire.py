@@ -1,145 +1,130 @@
+from typing import Any
 import numpy as np
 from termcolor import colored
 from time import sleep
 import sys
 
-def Number(number):
-    if number == 1:
-        string = 'first'
-    elif number == 2:
-        string = 'second'
-    elif number == 3:
-        string = 'third'
-    elif number == 4:
-        string = 'fourth'
+class Card:
+    seed = ''
+    value = 0
+    status = ''
+
+    def __init__(self, s, n):
+        self.seed = s
+        self.value = n
+
+    def __eq__(self, other):
+        return (self.seed == other.seed and self.value == other.value)
     
-    return string
-
-def CheckSuccess(table):
-    success_matrix = ([['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7', 'C8', 'C9'], ['Q1', 'Q2', 'Q3', 'Q4', 'Q5', 'Q6', 'Q7', 'Q8', 'Q9'],
-                        ['P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9'], ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9']])
-    if (table == success_matrix).all():
-        return 1
-    else:
-        return 0
+    def GetColumn(self):
+        return self.value - 1
     
-def Row(seed):
-    if seed == 'C':
-        row = 0
-    elif seed == 'Q':
-        row = 1
-    elif seed == 'P':
-        row = 2
-    elif seed == 'F':
-        row = 3
-    return row
+    def GetRow(self):
+        seeds = ['C', 'Q', 'P', 'F']
+        index = seeds.index(self.seed)
+        return index
+    
+    def GetPosition(self):
+        row = self.GetRow()
+        column = self.GetColumn()
+        return row, column
+    
+    def SetStatus(self, string):
+        self.status = string
 
-def Card2Position(string):
-    seed = string[0]
-    row = Row(seed)
-    column = int(string[1:]) - 1
+    def PrintCard(self, color = None):
+        stat = self.status
+        val = self.value
+        if val == 10:
+            val = 'K'
+        if stat == 'correct':
+            print(colored(self.seed + str(val), 'blue'), end = ' ')
+        elif color:
+            print(colored(self.seed + str(val), color), end = ' ')
+        else:
+            print(self.seed + str(val), end = ' ')
 
-    return row, column
+    
+
 
 def Sequence2Deck(array):
     '''Convert a number sequence in gaming cards'''
     deck = []
     for ii in range(len(array)):
         if 1 <= array[ii] <= 10:
-            if array[ii] == 10:
-                this_value = 'CK'
-            else:
-                this_value = 'C' + str(array[ii])
+            card = Card('C', array[ii])
         elif 11 <= array[ii] <= 20:
-            if array[ii] == 20:
-                this_value = 'QK'
-            else:
-                this_value = 'Q' + str(array[ii] - 10)
+            card = Card('Q', array[ii] - 10)
         elif 21 <= array[ii] <= 30:
-            if array[ii] == 30:
-                this_value = 'PK'
-            else:
-                this_value = 'P' + str(array[ii] - 20)
+            card = Card('P', array[ii] - 20)
         elif 31 <= array[ii] <= 40:
-            if array[ii] == 40:
-                this_value = 'FK'
-            else:
-                this_value = 'F' + str(array[ii] - 30)
-
-        deck.append(this_value)
+            card = Card('F', array[ii] - 30)
+        deck.append(card)   
     return np.array(deck)
 
-def PrintTable(table, row = None, column = None, color = None):
-    for i in range(4):
-        table_row = table[i, :]
-        for dummy_table in table_row:
-            if row and column:
-                if dummy_table == table[row, column]:
-                    print(colored(dummy_table, 'yellow'), end = '  ')
-                else:
-                    print(colored(dummy_table, 'blue'), end = '  ')
+def PrintStatus(table_matrix, card_number, next_card, hand, moves):
+    print('\n------ Card: ' + str(card_number) + ' || Move: ' + str(moves))
+    for ii in range(table_matrix.shape[0]):
+        table_row = table_matrix[ii, :]
+        for jj in range(len(table_row)):
+            next_row, next_column = next_card.GetPosition()
+            if next_row == ii and next_column == jj:
+                color = 'yellow'
             else:
-                if color:
-                    print(colored(dummy_table, color), end = '  ')
+                color = 'white'
+            table_row[jj].PrintCard(color)
         print()
+    print('------ Hand:', end = ' ')
+    for hand_card in hand:        
+        hand_card.PrintCard(color = 'red')
+    print('||', end = ' ')
+    next_card.PrintCard(color = 'green')
+    print()
 
-def PrintStep(table, actions, current_hand, current_card, row, column):
-    print('--------- Substitution number: ' + str(actions))
-    PrintTable(table, row, column)
-    print('--------- Hand:' , end = ' ')
-    if len(current_hand) > 0:
-        for dummy_hand in current_hand:
-            if len(current_hand) > 0:
-                print(colored(dummy_hand, 'red'), end = ' ')
-        print(' || ' + colored(current_card, 'green'), end = '\n')
-    else:
-        print(colored('empty!', 'red') + ' || ' + colored(current_card, 'green'), end = '\n')   
-    print('--------------------------------------------------')
-    
 def Solitaire(display = True, slow_down = None):
 
     # build the deck, define seed and numbers and shuffle the deck!
     sequence = np.arange(1, 41, 1)
     np.random.shuffle(sequence)
-    deck = Sequence2Deck(sequence)
-
+    deck = np.array(Sequence2Deck(sequence), dtype = Card)
+    
     # define player's hand and table
-    table = (deck[4:]).reshape(4, 9)
     hand = deck[0:4]
+    deck = deck[4:]
+    table = deck.reshape(4, 9)
 
     # define king cards
-    kings = ['CK', 'QK', 'PK', 'FK']
+    ck = Card('C', 10)
+    qk = Card('Q', 10)
+    pk = Card('P', 10)
+    fk = Card('F', 10)
+    kings = [ck, qk, pk, fk]
 
     # let's count the number of necessary actions and the number of cards drawn from the hand
     card_counter = 0
     actions = 0
-    current_hand = hand
 
     for card in hand:
         card_counter += 1
-        this_card = card      
-
-        # eventually print the hand status when a new card is drawn
-        if display == True:
-            print('--------------------------------------------------')
-            print('--------- Card: ' + colored(this_card, 'red') + ', ' + Number(card_counter) + ' card drawn.')
-            card_index = np.where(current_hand == this_card)
-            current_hand = np.delete(current_hand, card_index)
+        this_card = card
+        card_index = np.where(hand == this_card)
+        hand = np.delete(hand, card_index)
 
         while this_card not in kings:
-                
-            # read card future position
-            row, column = Card2Position(this_card)
+            
+            # read future position for the card
+            row, column = this_card.GetPosition()
 
             # eventually print the table status at the beginning of each loop
             if display == True:
-                PrintStep(table, actions, current_hand, this_card, row, column)
+                PrintStatus(table, card_counter, this_card, hand, actions)
 
             # memorize current card in that position
             temp_card = table[row, column]
 
             # substitute the card in that position
             table[row, column] = this_card
+            this_card.SetStatus('correct')
 
             # the new card must be put in the right position!
             this_card = temp_card
@@ -150,18 +135,9 @@ def Solitaire(display = True, slow_down = None):
             # if we want to follow the process we can simply slow things down!
             if slow_down:
                 sleep(slow_down)
-        # eventually display the final disposition
+
         if display == True:
-            success = CheckSuccess(table)[0]
-            if success == 1:
-                color = 'green'
-            else: 
-                color = 'red'
-            PrintTable(table, color)
-
-            
-    return CheckSuccess(table), actions
-
+            PrintStatus(table, card_counter, this_card, hand, actions)
 
 def main():
     slowing_time = None
